@@ -1,0 +1,21 @@
+{
+  "name": "angular-sync-local-storage",
+  "version": "0.0.0",
+  "homepage": "https://github.com/taylorcode/angular-sync-local-storage",
+  "authors": [
+    "Taylor McIntyre <taylorsmcintyre@gmail.com>"
+  ],
+  "description": "Synchronize an object with localStorage across browser windows using angular's digest cycle.",
+  "main": "dist/browser/angular-sync-local-storage.js",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "update-js-model": "https://github.com/taylorcode/update-js-model.git"
+  }
+}

@@ -16,6 +16,6 @@
     "tests"
   ],
   "dependencies": {
-    "update-js-model": "https://github.com/taylorcode/update-js-model.git"
+    "update-js-model": "https://github.com/taylorcode/update-js-model.git#0.1.1"
   }
 }

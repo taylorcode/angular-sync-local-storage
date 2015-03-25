@@ -11,8 +11,8 @@ class AngularSyncLocalStorageProvider {
   constructor() {
     this.debounceSyncDelay = 300
   }
-  $get($rootScope, $window, $timeout) {
-    return new AngularSyncLocalStorage($rootScope, $window, $timeout, this) // pass in the provider instance
+  $get($rootScope, $window, $timeout, uniqueWindowIdentifier) {
+    return new AngularSyncLocalStorage($rootScope, $window, $timeout, uniqueWindowIdentifier, this) // pass in the provider instance
   }
 }
 
@@ -22,7 +22,7 @@ function AngularSyncLocalStorageProviderFactory () {
 
 class AngularSyncLocalStorage {
 
-  constructor($rootScope, $window, $timeout, providerInstance) {
+  constructor($rootScope, $window, $timeout, uniqueWindowIdentifier, providerInstance) {
     this.$rootScope = $rootScope
     this.$window = $window
     this.$timeout = $timeout
@@ -32,6 +32,7 @@ class AngularSyncLocalStorage {
     this.sync = sync
     this.providerInstance = providerInstance
     this.syncLocal = angular.noop
+    this.uniqueWindowIdentifier = uniqueWindowIdentifier
   }
 
   _queryUpdateStorage() {
@@ -51,7 +52,7 @@ class AngularSyncLocalStorage {
     this.localStorage[key] = angular.toJson(value)
   }
 
-  synchronize(localObject, persistKey, initialSync = true) {
+  synchronize(localObject, persistKey, ops) {
 
     let localObjStringType = Object.prototype.toString.call(localObject)
 
@@ -59,15 +60,29 @@ class AngularSyncLocalStorage {
       throw new Error('AngularSyncLocalStorage: object to synchronize with must be an hash or an array.')
     }
 
+    var options = {
+      uniquePerWindow: false,
+      initialSync: true
+    }, synchronizeLocalStorage
+
+    // merge options into default options
+    angular.extend(options, ops)
+
     if (!this.supportsLocalStorage()) {
       // silently die if there is no localStorage support
       return
     }
-    var synchronizeLocalStorage
+
+    if(options.uniquePerWindow) {
+      // create or just make sure the window has it's unique identifier
+      this.uniqueWindowIdentifier.ensure()
+      // modify the key so that it uses a unique store for this window
+      persistKey += '_' + this.uniqueWindowIdentifier.get()
+    }
 
     this.syncLocal = this.sync(this.localStorage, persistKey, localObject)
 
-    if (initialSync) {
+    if (options.initialSync) {
       // if we want to initially sync, it will override what's currently in the local object with what is in localStorage
       this.syncLocal()
     }
@@ -75,12 +90,12 @@ class AngularSyncLocalStorage {
     // only affects performance of the other windows receiving the update
     synchronizeLocalStorage = this.debounce((ls) => {
       this._updateLocalStorage(persistKey, ls)
-    }, this.providerInstance.debounceSyncDelay)
+    }, this.providerInstance.debounceSyncDelay, true) // immediate so that it initially syncs
 
     // deep watch localObject for changes, update localStorage when whey occur
     this.$rootScope.$watch(() => {
       return localObject
-    }, synchronizeLocalStorage, true)
+    }, synchronizeLocalStorage, !options.initialSync) // initially update if we haven't already synchronized ls --> obj
 
     // listen for storage changes, notify
     this.$window.addEventListener('storage', this._queryUpdateStorage.bind(this))
@@ -89,7 +104,8 @@ class AngularSyncLocalStorage {
 
 }
 
-angular.module('angularSyncLocalStorage', []).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)
+angular.module('angularSyncLocalStorage', ['angularUniqueWindow']).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)
+
 
 // helper functions - move to better place
 function supportsLocalStorage() {

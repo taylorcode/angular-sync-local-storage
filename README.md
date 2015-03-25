@@ -1,0 +1,43 @@
+# angularSyncLocalStorage
+
+Angular automatic data persistance using Local Storage. Automatically synchronizes data models across windows. Also allows creation of unique, persisted localStorage containers per browser window.
+
+### Basic Setup
+
+First, add this module to your application:
+
+	angular.module('myApp', ['angularSyncLocalStorage'])
+
+### Methods
+
+#### synchronizedLocalStorage.synchronize(localContainer, localStorageKey, options)
+
+	let myContainer = {}
+
+	synchronizedLocalStorage.synchronize(myContainer, 'my-key')
+
+In this example, `myContainer` will automatically be synchronized with the `my-key` property in localStorage. This synchronization occurs across browser windows, so the `myContainer` objects in all windows will be identical.
+
+
+##### Options (defaults specified)
+
+	{
+		uniquePerWindow: false,
+		initialSync: true
+	}
+
+`Options` is an optional parameter.
+
+If `uniquePerWindow` is `true`, the localStorage container will persist in each browser window, but not between windows.
+
+If `initialSync` is true, the container will be synchronized with localStorage when it is initialized. Otherwise, the reverse will happen; localStorage will be synchronized with the object.
+
+### Configuration
+
+By default, `angularSyncLocalStorage` is configured to synchronize localStorage with your object in `300ms`. You can configure this value on the provider with:
+
+	angularSyncLocalStorageProvider.debounceSyncDelay = 300
+
+### Improvements
+
+- I'm considering adding the ability to synchronize using a deep `extend` functionality when `uniquePerWindow` is `false`. This will allow a cumulative effect of data synchronization, instead of the last-updated windows value always persisting.

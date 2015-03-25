@@ -54,6 +54,92 @@ function updateModel(oldObj, newObj) {
 //# sourceMappingURL=update-model.js.map
 "use strict";
 
+var _createClass = (function () {
+  function defineProperties(target, props) {
+    for (var key in props) {
+      var prop = props[key];prop.configurable = true;if (prop.value) prop.writable = true;
+    }Object.defineProperties(target, props);
+  }return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+  };
+})();
+
+var _classCallCheck = function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+var UniqueWindowIdentifier = (function () {
+  function UniqueWindowIdentifier($window) {
+    _classCallCheck(this, UniqueWindowIdentifier);
+
+    this.$window = $window;
+    this.currentWindow = this.$window.self;
+    this.nameKey = "__uniqueWindowIdentifier";
+  }
+
+  _createClass(UniqueWindowIdentifier, {
+    _generateUniqueId: {
+      value: function _generateUniqueId() {
+        return Math.random().toString(36).slice(2);
+      }
+    },
+    _setIdentifier: {
+      value: function _setIdentifier(nameObj) {
+        var windowNameObj = nameObj || {};
+        windowNameObj[this.nameKey] = this._generateUniqueId();
+        this.currentWindow.name = JSON.stringify(windowNameObj);
+      }
+    },
+    ensure: {
+      value: function ensure() {
+        var windowNameObj;
+        // if windowProps.name is set and it's not a stringified object, convert it to it
+        if (this.currentWindow.name) {
+          try {
+            windowNameObj = JSON.parse(this.currentWindow.name);
+          } catch (e) {
+            // the name is not a stringified object
+            console.warn("UniqueWindowIdentifier: the windows name is already set, overriding with an stringified object");
+            this._setIdentifier();
+            return;
+          }
+          // what's saved is a stringifed object already
+          if (!windowNameObj[this.nameKey]) {
+            this._setIdentifier(windowNameObj);
+          }
+        } else {
+          this._setIdentifier();
+        }
+      }
+    },
+    reset: {
+      value: function reset() {
+        this._setIdentifier();
+      }
+    },
+    get: {
+      value: function get() {
+        // return the identifier or undefined
+        var identifier;
+        try {
+          identifier = JSON.parse(this.currentWindow.name)[this.nameKey];
+        } catch (e) {
+          return;
+        }
+        return identifier;
+      }
+    }
+  });
+
+  return UniqueWindowIdentifier;
+})();
+
+angular.module("angularUniqueWindow", []).service("uniqueWindowIdentifier", UniqueWindowIdentifier);
+//# sourceMappingURL=unique-window-identifier.js.map
+"use strict";
+
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
@@ -74,8 +160,8 @@ var AngularSyncLocalStorageProvider = (function () {
 
   _createClass(AngularSyncLocalStorageProvider, {
     $get: {
-      value: function $get($rootScope, $window, $timeout) {
-        return new AngularSyncLocalStorage($rootScope, $window, $timeout, this) // pass in the provider instance
+      value: function $get($rootScope, $window, $timeout, uniqueWindowIdentifier) {
+        return new AngularSyncLocalStorage($rootScope, $window, $timeout, uniqueWindowIdentifier, this) // pass in the provider instance
         ;
       }
     }
@@ -89,7 +175,7 @@ function AngularSyncLocalStorageProviderFactory() {
 }
 
 var AngularSyncLocalStorage = (function () {
-  function AngularSyncLocalStorage($rootScope, $window, $timeout, providerInstance) {
+  function AngularSyncLocalStorage($rootScope, $window, $timeout, uniqueWindowIdentifier, providerInstance) {
     _classCallCheck(this, AngularSyncLocalStorage);
 
     this.$rootScope = $rootScope;
@@ -101,6 +187,7 @@ var AngularSyncLocalStorage = (function () {
     this.sync = sync;
     this.providerInstance = providerInstance;
     this.syncLocal = angular.noop;
+    this.uniqueWindowIdentifier = uniqueWindowIdentifier;
   }
 
   _createClass(AngularSyncLocalStorage, {
@@ -126,10 +213,8 @@ var AngularSyncLocalStorage = (function () {
       }
     },
     synchronize: {
-      value: function synchronize(localObject, persistKey) {
+      value: function synchronize(localObject, persistKey, ops) {
         var _this = this;
-
-        var initialSync = arguments[2] === undefined ? true : arguments[2];
 
         var localObjStringType = Object.prototype.toString.call(localObject);
 
@@ -137,15 +222,30 @@ var AngularSyncLocalStorage = (function () {
           throw new Error("AngularSyncLocalStorage: object to synchronize with must be an hash or an array.");
         }
 
+        var options = {
+          uniquePerWindow: false,
+          initialSync: true
+        },
+            synchronizeLocalStorage;
+
+        // merge options into default options
+        angular.extend(options, ops);
+
         if (!this.supportsLocalStorage()) {
           // silently die if there is no localStorage support
           return;
         }
-        var synchronizeLocalStorage;
+
+        if (options.uniquePerWindow) {
+          // create or just make sure the window has it's unique identifier
+          this.uniqueWindowIdentifier.ensure();
+          // modify the key so that it uses a unique store for this window
+          persistKey += "_" + this.uniqueWindowIdentifier.get();
+        }
 
         this.syncLocal = this.sync(this.localStorage, persistKey, localObject);
 
-        if (initialSync) {
+        if (options.initialSync) {
           // if we want to initially sync, it will override what's currently in the local object with what is in localStorage
           this.syncLocal();
         }
@@ -153,12 +253,12 @@ var AngularSyncLocalStorage = (function () {
         // only affects performance of the other windows receiving the update
         synchronizeLocalStorage = this.debounce(function (ls) {
           _this._updateLocalStorage(persistKey, ls);
-        }, this.providerInstance.debounceSyncDelay);
+        }, this.providerInstance.debounceSyncDelay, true); // immediate so that it initially syncs
 
         // deep watch localObject for changes, update localStorage when whey occur
         this.$rootScope.$watch(function () {
           return localObject;
-        }, synchronizeLocalStorage, true);
+        }, synchronizeLocalStorage, !options.initialSync); // initially update if we haven't already synchronized ls --> obj
 
         // listen for storage changes, notify
         this.$window.addEventListener("storage", this._queryUpdateStorage.bind(this));
@@ -169,7 +269,7 @@ var AngularSyncLocalStorage = (function () {
   return AngularSyncLocalStorage;
 })();
 
-angular.module("angularSyncLocalStorage", []).provider("synchronizedLocalStorage", AngularSyncLocalStorageProviderFactory);
+angular.module("angularSyncLocalStorage", ["angularUniqueWindow"]).provider("synchronizedLocalStorage", AngularSyncLocalStorageProviderFactory);
 
 // helper functions - move to better place
 function supportsLocalStorage() {

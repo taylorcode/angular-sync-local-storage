@@ -1,6 +1,6 @@
 "use strict";
 
-if (!taylorcode) taylorcode = {};
+if (!window.taylorcode) window.taylorcode = {};
 
 taylorcode.updateModel = updateModel;
 

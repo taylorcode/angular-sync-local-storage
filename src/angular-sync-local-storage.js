@@ -55,7 +55,7 @@ class AngularSyncLocalStorage {
 
     let localObjStringType = Object.prototype.toString.call(localObject)
 
-    if(localObjStringType === '[object Object]' || localObjStringType === '[object Array]') {
+    if(localObjStringType !== '[object Object]' && localObjStringType !== '[object Array]') {
       throw new Error('AngularSyncLocalStorage: object to synchronize with must be an hash or an array.')
     }
 

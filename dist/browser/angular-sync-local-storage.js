@@ -188,12 +188,23 @@ var AngularSyncLocalStorage = (function () {
     this.providerInstance = providerInstance;
     this.uniqueWindowIdentifier = uniqueWindowIdentifier;
     this._masterKeyPostfix = "__master";
+    this.syncMap = {};
+    this.localMap = {};
   }
 
   _createClass(AngularSyncLocalStorage, {
     _updateLocalStorage: {
       value: function _updateLocalStorage(key, value) {
         this.localStorage[key] = angular.toJson(value);
+      }
+    },
+    syncLocalObj: {
+      value: function syncLocalObj(localObject) {
+        for (var key in this.localMap) {
+          if (this.localMap[key] === localObject) {
+            return this.syncMap[key](localObject);
+          }
+        }
       }
     },
     synchronize: {
@@ -240,27 +251,35 @@ var AngularSyncLocalStorage = (function () {
 
         if (options.initialSync) {
           // if we want to initially sync, it will override what's currently in the local object with what is in localStorage
-          if (this.localStorage[persistKey]) {
-            // restore either from single place or unique window (ex on a refresh)
-            syncLocal();
-          } else if (trackMaster) {
-            // restore from master (this is a unique window that is being opened for the first time)
-            this.sync(this.localStorage, masterKey, localObject)();
+          if (!this.localStorage[persistKey] && trackMaster) {
+            // restore the master onto this local
+            this.localStorage[persistKey] = this.localStorage[masterKey];
           }
+          syncLocal();
         }
+
+        // create a map of key --> sync functions
+        var thing1 = function (persistKey, masterKey, trackMaster) {
+          return function (ls, oldLs) {
+            if (ls === oldLs) {
+              // if it's the same object (nothing has changed), just return
+              return;
+            }
+            _this._updateLocalStorage(persistKey, ls);
+            if (trackMaster) {
+              // update the master so it always has the most recent data
+              _this._updateLocalStorage(masterKey, ls);
+            }
+          };
+        };
+
+        this.syncMap[persistKey] = thing1(persistKey, masterKey, trackMaster);
+
         // set up to update localStorage only every debounce time
         // only affects performance of the other windows receiving the update
-        synchronizeLocalStorage = this.debounce(function (ls, oldLs) {
-          if (ls === oldLs) {
-            // if it's the same object (nothing has changed), just return
-            return;
-          }
-          _this._updateLocalStorage(persistKey, ls);
-          if (trackMaster) {
-            // update the master so it always has the most recent data
-            _this._updateLocalStorage(masterKey, ls);
-          }
-        }, this.providerInstance.debounceSyncDelay, !options.initialSync); // initially update if we haven't already synchronized ls --> obj
+        synchronizeLocalStorage = this.debounce(this.syncMap[persistKey], this.providerInstance.debounceSyncDelay, !options.initialSync); // initially update if we haven't already synchronized ls --> obj
+
+        this.localMap[persistKey] = localObject;
 
         // deep watch localObject for changes, update localStorage when whey occur
         this.$rootScope.$watch(function () {
@@ -268,20 +287,24 @@ var AngularSyncLocalStorage = (function () {
         }, synchronizeLocalStorage, true);
 
         // listen for storage changes, notify
-        this.$window.addEventListener("storage", function () {
-          if (syncLocal()) {
-            // NOTE timeout is needed because this has the potential to be broadcasted before the ready
-            // event is fired in jquery where this is being listened for
-            // on updated occurs when localStorage is updated outside of the application
-            // and you may have services that need to query the data (such as session information)
-            _this.$timeout(function () {
-              _this.$rootScope.$broadcast("sls:updated", {
-                key: originalPersistKey || persistKey
+        var thing2 = function (syncLocal, originalPersistKey, persistKey) {
+          _this.$window.addEventListener("storage", function () {
+            if (syncLocal()) {
+              // NOTE timeout is needed because this has the potential to be broadcasted before the ready
+              // event is fired in jquery where this is being listened for
+              // on updated occurs when localStorage is updated outside of the application
+              // and you may have services that need to query the data (such as session information)
+              _this.$timeout(function () {
+                _this.$rootScope.$broadcast("sls:updated", {
+                  key: originalPersistKey || persistKey
+                });
               });
-            });
-            _this.$rootScope.$digest();
-          }
-        });
+              _this.$rootScope.$digest();
+            }
+          });
+        };
+
+        thing2(syncLocal, originalPersistKey, persistKey);
       }
     }
   });

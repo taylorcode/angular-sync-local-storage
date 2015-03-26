@@ -23,12 +23,16 @@ In this example, `myContainer` will automatically be synchronized with the `my-k
 
 	{
 		uniquePerWindow: false,
+		restoreFromMaster: true,
 		initialSync: true
 	}
 
 `Options` is an optional parameter.
 
 If `uniquePerWindow` is `true`, the localStorage container will persist in each browser window, but not between windows.
+
+
+If `uniquePerWindow` and `restoreFromMaster` and `initialSync` are all `true`, when a new window is created, its unique `localStorage` container will be initialized with the most recently synchronized values to any of the unique window containers for the `localStorageKey`.
 
 If `initialSync` is true, the container will be synchronized with localStorage when it is initialized. Otherwise, the reverse will happen; localStorage will be synchronized with the object.
 

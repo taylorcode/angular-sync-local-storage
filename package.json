@@ -1,6 +1,6 @@
 {
   "name": "angular-sync-local-storage",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Synchronize an object with localStorage across browser windows using angular's digest cycle.",
   "main": "gulpfile.js",
   "repository": {

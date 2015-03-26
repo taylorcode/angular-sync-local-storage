@@ -251,7 +251,7 @@ var AngularSyncLocalStorage = (function () {
 
         if (options.initialSync) {
           // if we want to initially sync, it will override what's currently in the local object with what is in localStorage
-          if (!this.localStorage[persistKey] && trackMaster) {
+          if (!this.localStorage[persistKey] && trackMaster && this.localStorage[masterKey]) {
             // restore the master onto this local
             this.localStorage[persistKey] = this.localStorage[masterKey];
           }

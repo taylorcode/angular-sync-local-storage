@@ -23,4 +23,4 @@ gulp.task('dev:test', function () {
         .pipe(jasmine());
 });
 
-gulp.task('default', ['dev:scripts']);
+gulp.task('default', ['dev:scripts', 'dev:test']);

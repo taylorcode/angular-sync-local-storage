@@ -6,7 +6,7 @@
  * Allows configuration of an instance of AngularSyncLocalStorage.
  * 
  */
-function AngularSyncLocalStorageProviderFactory () {
+export function AngularSyncLocalStorageProviderFactory () {
   return new AngularSyncLocalStorageProvider
 }
 
@@ -47,6 +47,7 @@ class AngularSyncLocalStorage {
     this.providerInstance = providerInstance
     this.uniqueWindowIdentifier = uniqueWindowIdentifier
     this._masterKeyPostfix = '__master'
+    this._versionKeyPostfix = '__version'
     this.syncMap = {}
     this.localMap = {}
   }
@@ -63,7 +64,7 @@ class AngularSyncLocalStorage {
    */
   _supportsLocalStorage() {
     var testKey = 'test',
-        storage = window.localStorage
+        storage = this.$window.localStorage
     try {
       storage.setItem(testKey, '1')
       storage.removeItem(testKey)
@@ -261,10 +262,12 @@ class AngularSyncLocalStorage {
     var options = {
       uniquePerWindow: false,
       restoreFromMaster: true,
-      initialSync: true
+      initialSync: true,
+      version: 0
     },
     syncLocal = null,
-    synchronizeLocalStorage, trackMaster, masterKey
+    isNewLsVersion = false,
+    synchronizeLocalStorage, trackMaster, masterKey, versionKey
 
     if(!this._supportsLocalStorage()) {
       // silently die if there is no localStorage support
@@ -275,6 +278,17 @@ class AngularSyncLocalStorage {
 
     trackMaster = options.uniquePerWindow && options.restoreFromMaster && options.initialSync
 
+    if(options.version) {
+      versionKey = persistKey + this._versionKeyPostfix
+      if(options.version !== this.localStorage[versionKey]) {
+        // set that this is a new localStorage version
+        isNewLsVersion = true
+        // finally, update the version in localStorage
+        this.localStorage[versionKey] = options.version
+      }
+      // they are equal, do nothing
+    }
+
     if(options.uniquePerWindow) {
       // create or just make sure the window has it's unique identifier
       this.uniqueWindowIdentifier.ensure()
@@ -282,6 +296,14 @@ class AngularSyncLocalStorage {
       masterKey = persistKey + this._masterKeyPostfix
       // modify the key so that it uses a unique store for this window
       persistKey += '_' + this.uniqueWindowIdentifier.get()
+    }
+
+    // remove the containers if it's a new version
+    if(isNewLsVersion) {
+      delete localStorage[persistKey]
+      if(masterKey) {
+        delete localStorage[masterKey]
+      }
     }
 
     // at this point, the persist key is what we're going to want to synchronize with
@@ -316,4 +338,4 @@ class AngularSyncLocalStorage {
   }
 }
 
-angular.module('angularSyncLocalStorage', ['angularUniqueWindow']).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)
+//angular.module('angularSyncLocalStorage', ['angularUniqueWindow']).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)

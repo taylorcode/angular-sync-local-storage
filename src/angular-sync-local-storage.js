@@ -302,7 +302,7 @@ class AngularSyncLocalStorage {
     // set up to update localStorage only every debounce time
     // only affects performance of the other windows receiving the update
     // initially update if we haven't already synchronized ls --> obj
-    synchronizeLocalStorage = this.debounce(this.syncMap[persistKey], this.providerInstance.debounceSyncDelay, !options.initialSync)
+    synchronizeLocalStorage = this._debounce(this.syncMap[persistKey], this.providerInstance.debounceSyncDelay, !options.initialSync)
     this.localMap[persistKey] = localObject
     // deep watch localObject for changes, update localStorage when whey occur
     this.$rootScope.$watch(() => {

@@ -152,11 +152,6 @@ var _classCallCheck = function (instance, Constructor) { if (!(instance instance
  * Allows configuration of an instance of AngularSyncLocalStorage.
  * 
  */
-exports.AngularSyncLocalStorageProviderFactory = AngularSyncLocalStorageProviderFactory;
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
 function AngularSyncLocalStorageProviderFactory() {
   return new AngularSyncLocalStorageProvider();
 }
@@ -539,5 +534,5 @@ var AngularSyncLocalStorage = (function () {
   return AngularSyncLocalStorage;
 })();
 
-//angular.module('angularSyncLocalStorage', ['angularUniqueWindow']).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)
+angular.module("angularSyncLocalStorage", ["angularUniqueWindow"]).provider("synchronizedLocalStorage", AngularSyncLocalStorageProviderFactory);
 //# sourceMappingURL=angular-sync-local-storage.js.map

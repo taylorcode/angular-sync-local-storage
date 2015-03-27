@@ -6,7 +6,7 @@
  * Allows configuration of an instance of AngularSyncLocalStorage.
  * 
  */
-export function AngularSyncLocalStorageProviderFactory () {
+function AngularSyncLocalStorageProviderFactory () {
   return new AngularSyncLocalStorageProvider
 }
 
@@ -315,3 +315,5 @@ class AngularSyncLocalStorage {
     }
   }
 }
+
+angular.module('angularSyncLocalStorage', ['angularUniqueWindow']).provider('synchronizedLocalStorage', AngularSyncLocalStorageProviderFactory)

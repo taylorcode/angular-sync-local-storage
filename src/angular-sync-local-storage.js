@@ -266,7 +266,7 @@ class AngularSyncLocalStorage {
     syncLocal = null,
     synchronizeLocalStorage, trackMaster, masterKey
 
-    if(!this.supportsLocalStorage()) {
+    if(!this._supportsLocalStorage()) {
       // silently die if there is no localStorage support
       return
     }

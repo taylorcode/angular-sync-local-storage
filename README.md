@@ -34,7 +34,7 @@ If `uniquePerWindow` is `true`, the localStorage container will persist in each 
 
 If `uniquePerWindow` and `restoreFromMaster` and `initialSync` are all `true`, when a new window is created, its unique `localStorage` container will be initialized with the most recently synchronized values to any of the unique window containers for the `localStorageKey`.
 
-If `initialSync` is true, the container will be synchronized with localStorage when it is initialized. Otherwise, the reverse will happen; localStorage will be synchronized with the object.
+If `initialSync` is `true`, the container will be synchronized with localStorage when it is initialized. Otherwise, the reverse will happen; localStorage will be synchronized with the object.
 
 ### Configuration
 

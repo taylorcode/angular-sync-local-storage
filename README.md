@@ -43,7 +43,7 @@ If `version` is not 0, and the version is updated, the container and the master 
 
 By default, `angularSyncLocalStorage` is configured to synchronize localStorage with your object in `300ms`. You can configure this value on the provider with:
 
-	angularSyncLocalStorageProvider.debounceSyncDelay = 300
+	synchronizedLocalStorageProvider.debounceSyncDelay = 300
 
 ### Improvements
 

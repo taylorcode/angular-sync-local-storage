@@ -45,6 +45,11 @@ By default, `angularSyncLocalStorage` is configured to synchronize localStorage 
 
 	synchronizedLocalStorageProvider.debounceSyncDelay = 300
 
+### Planned
+
+- Add listening for window `unload` event for cleaning up unused containers. Will need to use an expiration time because it's impossible to distinguish between a refresh and a close.
+
+
 ### Improvements
 
 - I'm considering adding the ability to synchronize using a deep `extend` functionality when `uniquePerWindow` is `false`. This will allow a cumulative effect of data synchronization, instead of the last-updated windows value always persisting.
